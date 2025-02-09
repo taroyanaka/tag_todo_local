@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script>navigator.serviceWorker.register("./service-worker.js")</script> 
   <title>Custom Todo List with Tags & Search</title>
   <!-- reset.css -->
   <link href="./reset.css" rel="stylesheet">
@@ -175,6 +174,8 @@
       }
     }
   </style>
+  <script>navigator.serviceWorker.register("service-worker.js")</script> 
+  <link rel="manifest" href="manifest.json" />  
 </head>
 <body>
   <div id="app">

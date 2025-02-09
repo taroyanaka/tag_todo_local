@@ -1,5 +1,5 @@
 {
-"name": "todo and tag",
+"name": "todo",
 "short_name": "ToDo",
 "start_url": "./tag_todo_local.html",
 "display": "standalone",
