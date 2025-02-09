@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Todo List with Tags & Search</title>
+  <!-- reset.css -->
+  <link href="./reset.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <!-- <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet"> -->
+  <link href="./font.css" rel="stylesheet">
+  <!-- Vue 3 CDN -->
+  <!-- <script src="https://unpkg.com/vue@3"></script> -->
+  <script src="./vue3.js"></script>
+  <!-- localforage CDN -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script> -->
+  <script src="./localforage.min.js"></script>
+  <style>
+    /* Global Styles */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    #app {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    /* Forms */
+    .todo-form, .tag-form, .search-form {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    input[type="text"] {
+      padding: 10px;
+      margin-right: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      width: 220px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      border-color: #3498db;
+    }
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    button:hover {
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    .add-btn {
+      background-color: #3498db;
+      color: #fff;
+    }
+    .edit-btn {
+      background-color: #27ae60;
+      color: #fff;
+      margin-left: 8px;
+    }
+    .remove-btn {
+      background-color: #e74c3c;
+      color: #fff;
+      margin-left: 8px;
+    }
+    .cancel-btn {
+      background-color: #95a5a6;
+      color: #fff;
+      margin-left: 8px;
+    }
+    .post-btn {
+      background-color: #8e44ad;
+      color: #fff;
+      margin-left: 8px;
+    }
+    .clear-filter-btn {
+      background-color: #34495e;
+      color: #fff;
+      margin-left: 8px;
+    }
+    /* Todo List */
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #fafafa;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #eee;
+    }
+    .todo-view, .todo-edit {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .todo-text {
+      flex-grow: 1;
+      margin-left: 8px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .todo-text.completed {
+      text-decoration: line-through;
+      color: #888;
+    }
+    .tags {
+      margin-left: 8px;
+      margin-top: 8px;
+    }
+    .tag {
+      display: inline-block;
+      background-color: #ecf0f1;
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin-right: 4px;
+      font-size: 14px;
+      color: #555;
+      cursor: pointer;
+    }
+    .tag button {
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      margin-left: 4px;
+      cursor: pointer;
+      color: #e74c3c;
+    }
+    .completed-todo {
+      background-color: #d3d3d3;
+    }
+    
+    /* Mobile Styles */
+    @media screen and (max-width: 600px) {
+      #app {
+        margin: 20px;
+        padding: 10px;
+        max-width: 100%;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .todo-form, .tag-form, .search-form {
+        flex-direction: column;
+        align-items: center;
+      }
+      input[type="text"] {
+        width: 90%;
+        margin: 8px 0;
+      }
+      button {
+        width: 90%;
+        margin: 8px 0;
+      }
+      .todo-view, .todo-edit {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .tags {
+        margin-left: 0;
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Filter Section -->
+    <div style="text-align: center; margin-bottom: 16px;">
+      <span v-if="filterTag">Current Filter: {{ filterTag }}</span>
+      <button v-if="filterTag" class="clear-filter-btn" @click="clearFilter">Clear Filter</button>
+    </div>
+    <!-- Search Form -->
+    <div class="search-form">
+      <input type="text" v-model="searchQuery" placeholder="Search">
+      <button v-if="searchQuery" type="button" class="clear-filter-btn" @click="clearSearch">Clear Search</button>
+    </div>
+    <!-- New Task Form -->
+    <div class="todo-form">
+      <input type="text" v-model="newTodo" placeholder="New Task" required>
+      <button type="button" class="add-btn" @click="addTodo">Add</button>
+    </div>
+    <!-- Tag Form -->
+    <div class="tag-form">
+      <input type="text" v-model="newTagInput" placeholder="Enter Tag" list="tagSuggestions">
+      <datalist id="tagSuggestions">
+        <option v-for="(tag, index) in suggestedTags" :key="index" :value="tag"></option>
+      </datalist>
+      <button type="button" class="add-btn" @click="addTagToNewTodo">Add Tag</button>
+      <div style="margin-left: 8px;">
+        <span v-for="(tag, index) in newTodoTags" :key="index" class="tag">{{ tag }}</span>
+      </div>
+    </div>
+    <!-- Todo List -->
+    <ul>
+      <li v-for="(todo, index) in sortedFilteredTodos" :key="todo.id" :class="{ 'completed-todo': todo.completed }">
+        <!-- View Mode -->
+        <div v-if="!todo.editing" class="todo-view">
+          <input type="checkbox" v-model="todo.completed" @change="saveTodos">
+          <span class="todo-text" :class="{ completed: todo.completed }" @click="toggleDone(todo)">
+            {{ todo.text }}
+          </span>
+          <span class="tags">
+            <span v-for="(tag, i) in todo.tags" :key="i" class="tag" @click="setFilterTag(tag)">
+              {{ tag }}
+            </span>
+          </span>
+          <button class="edit-btn" @click="editTodo(todo)">Edit</button>
+          <button class="remove-btn" @click="removeTodo(index)">Delete</button>
+          <button class="post-btn" @click="postTodoToX(todo)">Post</button>
+        </div>
+        <!-- Edit Mode -->
+        <div v-else class="todo-edit">
+          <input type="text" v-model="todo.text" placeholder="Task Content">
+          <div style="margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap;">
+            <div>
+              <span v-for="(tag, i) in todo.tags" :key="i" class="tag">
+                {{ tag }}
+                <button type="button" @click="removeTagFromTodo(todo, i)">×</button>
+              </span>
+            </div>
+            <div style="margin-left: 8px;">
+              <input type="text" v-model="todo.tagEditInput" placeholder="Enter New Tag" :list="'tagSuggestionsEdit-' + todo.id">
+              <datalist :id="'tagSuggestionsEdit-' + todo.id">
+                <option v-for="(tag, index) in getSuggestedTagsForEdit(todo)" :key="index" :value="tag"></option>
+              </datalist>
+              <button type="button" class="add-btn" @click="addTagToTodo(todo)">Add Tag</button>
+            </div>
+          </div>
+          <button type="button" @click="updateTodo(todo)">Save</button>
+          <button type="button" class="cancel-btn" @click="cancelEdit(todo)">Cancel</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+  
+  <script>
+    const app = Vue.createApp({
+      data() {
+        return {
+          newTodo: '',
+          newTodoTags: [],
+          newTagInput: '',
+          searchQuery: '',
+          todos: [],
+          filterTag: ''
+        };
+      },
+      computed: {
+        // Build unique list of tags for autocomplete
+        suggestedTags() {
+          const allTags = [];
+          this.todos.forEach(todo => {
+            todo.tags.forEach(tag => {
+              if (!allTags.includes(tag)) {
+                allTags.push(tag);
+              }
+            });
+          });
+          this.newTodoTags.forEach(tag => {
+            if (!allTags.includes(tag)) {
+              allTags.push(tag);
+            }
+          });
+          const input = this.newTagInput.trim().toLowerCase();
+          if (!input) return allTags;
+          return allTags.filter(tag => tag.toLowerCase().includes(input));
+        },
+        // Filter todos by tag and search query
+        filteredTodos() {
+          let todos = this.todos;
+          if (this.filterTag) {
+            todos = todos.filter(todo => todo.tags.includes(this.filterTag));
+          }
+          const query = this.searchQuery.trim().toLowerCase();
+          if (query) {
+            todos = todos.filter(todo => {
+              return (
+                todo.text.toLowerCase().includes(query) ||
+                todo.tags.some(tag => tag.toLowerCase().includes(query))
+              );
+            });
+          }
+          return todos;
+        },
+        // Sort todos so that incomplete items are shown first
+        sortedFilteredTodos() {
+          return this.filteredTodos.slice().sort((a, b) => {
+            if (a.completed === b.completed) return 0;
+            return a.completed ? 1 : -1;
+          });
+        }
+      },
+      methods: {
+        // Add a new task and update localforage
+        addTodo() {
+          if (!this.newTodo.trim()) return;
+          this.todos.push({
+            id: Date.now(),
+            text: this.newTodo,
+            tags: [...this.newTodoTags],
+            completed: false,
+            editing: false
+          });
+          // Reset inputs and update localforage
+          this.newTodo = '';
+          this.newTodoTags = [];
+          this.saveTodos();
+        },
+        removeTodo(index) {
+          this.todos.splice(index, 1);
+          this.saveTodos();
+        },
+        editTodo(todo) {
+          todo.editing = true;
+          todo.tagEditInput = '';
+        },
+        // Update a task after editing and update localforage
+        updateTodo(todo) {
+          todo.editing = false;
+          this.saveTodos();
+        },
+        cancelEdit(todo) {
+          todo.editing = false;
+          this.saveTodos();
+        },
+        addTagToNewTodo() {
+          const tag = this.newTagInput.trim();
+          if (tag && !this.newTodoTags.includes(tag)) {
+            this.newTodoTags.push(tag);
+          }
+          this.newTagInput = '';
+        },
+        removeTagFromTodo(todo, index) {
+          todo.tags.splice(index, 1);
+          this.saveTodos();
+        },
+        addTagToTodo(todo) {
+          const tag = (todo.tagEditInput || '').trim();
+          if (tag && !todo.tags.includes(tag)) {
+            todo.tags.push(tag);
+          }
+          todo.tagEditInput = '';
+          this.saveTodos();
+        },
+        getSuggestedTagsForEdit(todo) {
+          const allTags = [];
+          this.todos.forEach(t => {
+            t.tags.forEach(tag => {
+              if (!allTags.includes(tag)) {
+                allTags.push(tag);
+              }
+            });
+          });
+          this.newTodoTags.forEach(tag => {
+            if (!allTags.includes(tag)) {
+              allTags.push(tag);
+            }
+          });
+          const input = (todo.tagEditInput || '').trim().toLowerCase();
+          if (!input) return allTags;
+          return allTags.filter(tag => tag.toLowerCase().includes(input));
+        },
+        setFilterTag(tag) {
+          this.filterTag = tag;
+        },
+        clearFilter() {
+          this.filterTag = '';
+        },
+        clearSearch() {
+          this.searchQuery = '';
+        },
+        toggleDone(todo) {
+          todo.completed = !todo.completed;
+          this.saveTodos();
+        },
+        postTodoToX(todo) {
+          const status = todo.completed ? '✅' : '❌';
+          const text = `${status} ${todo.text}` + (todo.tags.length ? ` [${todo.tags.join(', ')}]` : '');
+          const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+          window.open(url, '_blank');
+        },
+        // Save the current todos array to localforage as a JSON string
+        saveTodos() {
+          console.log('Saving todos:', this.todos);
+          localforage.setItem('taros_todolist1', JSON.stringify(this.todos))
+            .then(() => {
+              console.log('Todos saved successfully');
+            })
+            .catch(err => console.error('Save error:', err));
+        },
+        // Load todos from localforage and parse JSON
+        loadTodos() {
+          localforage.getItem('taros_todolist1')
+            .then(data => {
+              if (data) {
+                console.log('Loaded todos:', data);
+                const parsed = JSON.parse(data);
+                this.todos = parsed.map(todo => ({
+                  ...todo,
+                  editing: false
+                }));
+              }
+            })
+            .catch(err => console.error('Load error:', err));
+        }
+      },
+      mounted() {
+        this.loadTodos();
+      },
+      watch: {
+        todos: {
+          handler() {
+            this.saveTodos();
+          },
+          deep: true
+        }
+      }
+    });
+    
+    app.mount('#app');
+  </script>
+</body>
+</html>
