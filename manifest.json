@@ -9,7 +9,7 @@
 "theme_color": "#000000",
 "background_color": "#000000",
 "orientation": "any",
-"app_id": "https://taroyanaka.github.io/tag_todo_local/tag_todo_local.html",
+"app_id": "tag_todo_local.html?version=1",
 "launch_handler": {
     "client_mode": "focus-existing"
 },
