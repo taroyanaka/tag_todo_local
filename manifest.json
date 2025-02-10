@@ -47,8 +47,5 @@
     "url": "https://example.com/windows-app"
     }
 ],
-"scope": "https://taroyanaka.github.io/tag_todo_local/",
-"scope_extensions": [
-    "https://taroyanaka.github.io/tag_todo_local/subdir/"
-]
+"scope": "https://taroyanaka.github.io/tag_todo_local/"
 }
