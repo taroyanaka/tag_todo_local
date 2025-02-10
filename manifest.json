@@ -9,7 +9,7 @@
 "theme_color": "#000000",
 "background_color": "#000000",
 "orientation": "any",
-"app_id": "https://taroyanaka.github.io/tag_todo_local/tag_todo_local.html",
+"app_id": "",
 "launch_handler": {
     "client_mode": "focus-existing"
 },
@@ -35,5 +35,20 @@
     "description": "A screenshot of the home page"
     }
 ],
-"prefer_related_applications": false
+"prefer_related_applications": false,
+"categories": [
+    "productivity",
+    "utilities"
+],
+"iarc_rating_id": "",
+"related_applications": [
+    {
+    "platform": "windows",
+    "url": "https://example.com/windows-app"
+    }
+],
+"scope": "https://taroyanaka.github.io/tag_todo_local/",
+"scope_extensions": [
+    "https://taroyanaka.github.io/tag_todo_local/subdir/"
+]
 }
